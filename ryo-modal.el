@@ -152,12 +152,18 @@ make sure the name of the created command is unique."
                 (set-keymap-parent (eval (intern map-name))
                                    ryo-modal-mode-map)
                 (add-to-list 'ryo-modal-mode-keymaps mode))
-              (define-key (eval (intern map-name)) (kbd key)
-                          (cons (plist-get args :name)
-                                (make-sparse-keymap))))
-          (define-key ryo-modal-mode-map (kbd key)
-                      (cons (plist-get args :name)
-                            (make-sparse-keymap))))))
+              ;; See comment below.
+              (unless (keymap-lookup (eval (intern map-name)) key)
+               (define-key (eval (intern map-name)) (kbd key)
+                           (cons (plist-get args :name)
+                                 (make-sparse-keymap)))))
+          ;; If the key is already bound, we don't need to re-make the
+          ;; binding with the sparse keymap.  If we do, we would overwrite
+          ;; any existing bindings.
+          (unless (key-binding (kbd key))
+           (define-key ryo-modal-mode-map (kbd key)
+                       (cons (plist-get args :name)
+                             (make-sparse-keymap)))))))
     (mapc (lambda (x)
             ;; Merge :then lists
             (when (and (plist-get (cddr x) :then)
